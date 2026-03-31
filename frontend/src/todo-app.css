@@ -424,7 +424,7 @@ body {
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   background: #faf8f5;
-  color: #1a1410;
+  color: #000000;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -436,9 +436,9 @@ body {
   border-radius: 10px;
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 400;
   background: #faf8f5;
-  color: #1a1410;
+  color: #000000;
   outline: none;
   resize: vertical;
   min-height: 90px;
@@ -447,7 +447,7 @@ body {
 }
 
 .modal textarea::placeholder {
-  color: #8a7d6b;
+  color: #5a4e3e;
 }
 
 .modal textarea:focus {
