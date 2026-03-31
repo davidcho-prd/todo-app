@@ -210,6 +210,29 @@ body {
   border: 1px solid #c5d0f5;
 }
 
+/* 수정 버튼 */
+.edit-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #e0d8cc;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a09070;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  border-color: #b8860b;
+  color: #b8860b;
+  background: #fdf6e3;
+}
+
 /* 삭제 버튼 */
 .delete-btn {
   margin-left: auto;
@@ -268,8 +291,8 @@ body {
 /* ── 할일 내용 ── */
 .todo-content {
   font-size: 13px;
-  font-weight: 300;
-  color: #8a7d6b;
+  font-weight: 400;
+  color: #4a3f30;
   line-height: 1.6;
   margin-bottom: 10px;
   white-space: pre-wrap;

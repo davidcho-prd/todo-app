@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './todo-app.css';
-import { getTodos, createTodo, deleteTodo, toggleTodo, checkDate, uncheckDate } from './api';
+import { getTodos, createTodo, updateTodo, deleteTodo, toggleTodo, checkDate, uncheckDate } from './api';
 
 function getDatesInRange(start, end) {
   if (!start || !end) return [];
@@ -26,12 +26,16 @@ function getProgress(todo) {
   return Math.round(((todo.checked_dates || []).length / dates.length) * 100);
 }
 
+const EMPTY_FORM = { title: '', content: '', type: 'single', category: '기타', dueDate: '', periodStart: '', periodEnd: '' };
+
 export default function TodoApp() {
   const [todos, setTodos] = useState([]);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '', type: 'single', category: '기타', dueDate: '', periodStart: '', periodEnd: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [editingTodo, setEditingTodo] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
 
   useEffect(() => { load(); }, []);
 
@@ -47,7 +51,29 @@ export default function TodoApp() {
       await createTodo(form);
       await load();
       setShowForm(false);
-      setForm({ title: '', content: '', type: 'single', category: '기타', dueDate: '', periodStart: '', periodEnd: '' });
+      setForm(EMPTY_FORM);
+    } catch (e) { setError(e.message); }
+  }
+
+  function openEdit(todo) {
+    setEditingTodo(todo);
+    setEditForm({
+      title: todo.title,
+      content: todo.content || '',
+      type: todo.type,
+      category: todo.category || '기타',
+      dueDate: todo.due_date || '',
+      periodStart: todo.period_start || '',
+      periodEnd: todo.period_end || '',
+    });
+  }
+
+  async function handleUpdate(e) {
+    e.preventDefault();
+    try {
+      await updateTodo(editingTodo.id, editForm);
+      await load();
+      setEditingTodo(null);
     } catch (e) { setError(e.message); }
   }
 
@@ -87,6 +113,49 @@ export default function TodoApp() {
     return true;
   });
 
+  const TaskForm = ({ values, setValues, onSubmit, onCancel, submitLabel }) => (
+    <form onSubmit={onSubmit}>
+      <select value={values.type} onChange={e => setValues({ ...values, type: e.target.value })}>
+        <option value="single">ONE-TIME</option>
+        <option value="daily">DAILY</option>
+      </select>
+      <input
+        type="text"
+        placeholder="Task title"
+        value={values.title}
+        onChange={e => setValues({ ...values, title: e.target.value })}
+        required
+      />
+      <textarea
+        placeholder="내용 (선택사항)"
+        value={values.content}
+        onChange={e => setValues({ ...values, content: e.target.value })}
+        rows={3}
+      />
+      <select value={values.category} onChange={e => setValues({ ...values, category: e.target.value })}>
+        <option value="업무">업무</option>
+        <option value="개인">개인</option>
+        <option value="의약">의약</option>
+        <option value="취미">취미</option>
+        <option value="스터디">스터디</option>
+        <option value="기타">기타</option>
+      </select>
+      {values.type === 'single' && (
+        <input type="date" value={values.dueDate} onChange={e => setValues({ ...values, dueDate: e.target.value })} />
+      )}
+      {values.type === 'daily' && (
+        <>
+          <input type="date" value={values.periodStart} onChange={e => setValues({ ...values, periodStart: e.target.value })} />
+          <input type="date" value={values.periodEnd} onChange={e => setValues({ ...values, periodEnd: e.target.value })} />
+        </>
+      )}
+      <div className="modal-actions">
+        <button type="submit" className="btn-primary">{submitLabel}</button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>CANCEL</button>
+      </div>
+    </form>
+  );
+
   return (
     <div className="app">
       <header className="header">
@@ -102,20 +171,12 @@ export default function TodoApp() {
       )}
 
       <div className="filter-tabs">
-        <button className={`tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-          ↗ ALL TASKS
-        </button>
-        <button className={`tab ${filter === 'single' ? 'active' : ''}`} onClick={() => setFilter('single')}>
-          ✓ ONE-TIME
-        </button>
-        <button className={`tab ${filter === 'daily' ? 'active' : ''}`} onClick={() => setFilter('daily')}>
-          ⊞ DAILY HABITS
-        </button>
+        <button className={`tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>↗ ALL TASKS</button>
+        <button className={`tab ${filter === 'single' ? 'active' : ''}`} onClick={() => setFilter('single')}>✓ ONE-TIME</button>
+        <button className={`tab ${filter === 'daily' ? 'active' : ''}`} onClick={() => setFilter('daily')}>⊞ DAILY HABITS</button>
       </div>
 
-      <button className="add-btn" onClick={() => setShowForm(true)}>
-        + ADD NEW TASK
-      </button>
+      <button className="add-btn" onClick={() => setShowForm(true)}>+ ADD NEW TASK</button>
 
       <ul className="todo-list">
         {filtered.map(todo => {
@@ -126,15 +187,9 @@ export default function TodoApp() {
           return (
             <li key={todo.id} className="todo-card">
               <div className="card-top">
-                <input
-                  type="checkbox"
-                  className="todo-checkbox"
-                  checked={!!todo.completed}
-                  onChange={() => handleToggle(todo.id)}
-                />
-                <span className={`badge badge-${todo.type}`}>
-                  {todo.type === 'single' ? 'ONE-TIME' : 'DAILY'}
-                </span>
+                <input type="checkbox" className="todo-checkbox" checked={!!todo.completed} onChange={() => handleToggle(todo.id)} />
+                <span className={`badge badge-${todo.type}`}>{todo.type === 'single' ? 'ONE-TIME' : 'DAILY'}</span>
+                <button className="edit-btn" onClick={() => openEdit(todo)}>✎</button>
                 <button className="delete-btn" onClick={() => handleDelete(todo.id)}>🗑</button>
               </div>
 
@@ -143,26 +198,18 @@ export default function TodoApp() {
               {todo.content && <p className="todo-content">{todo.content}</p>}
 
               {todo.type === 'daily' && todo.period_start && (
-                <div className="date-range">
-                  {formatDate(todo.period_start)} - {todo.period_end ? formatDate(todo.period_end) : ''}
-                </div>
+                <div className="date-range">{formatDate(todo.period_start)} - {todo.period_end ? formatDate(todo.period_end) : ''}</div>
               )}
 
               <div className="progress-row">
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${progress}%` }} />
-                </div>
+                <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
                 <span className="progress-pct">{progress}%</span>
               </div>
 
               {todo.type === 'daily' && dates.length > 0 && (
                 <div className="date-chips">
                   {dates.map(date => (
-                    <button
-                      key={date}
-                      className={`date-chip ${checkedSet.has(date) ? 'checked' : ''}`}
-                      onClick={() => handleDayCheck(todo, date, !checkedSet.has(date))}
-                    >
+                    <button key={date} className={`date-chip ${checkedSet.has(date) ? 'checked' : ''}`} onClick={() => handleDayCheck(todo, date, !checkedSet.has(date))}>
                       {checkedSet.has(date) && <span className="chip-check">✓</span>}
                       <span>{formatDate(date)}</span>
                     </button>
@@ -174,70 +221,22 @@ export default function TodoApp() {
         })}
       </ul>
 
+      {/* 추가 모달 */}
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>NEW TASK</h2>
-            {error && (
-              <div className="error" style={{ marginBottom: 16 }}>
-                <span>{error}</span>
-                <button onClick={() => setError('')}>✕</button>
-              </div>
-            )}
-            <form onSubmit={handleCreate}>
-              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                <option value="single">ONE-TIME</option>
-                <option value="daily">DAILY</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Task title"
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-                required
-              />
-              <textarea
-                placeholder="내용 (선택사항)"
-                value={form.content}
-                onChange={e => setForm({ ...form, content: e.target.value })}
-                rows={3}
-              />
-              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                <option value="업무">업무</option>
-                <option value="개인">개인</option>
-                <option value="의약">의약</option>
-                <option value="취미">취미</option>
-                <option value="스터디">스터디</option>
-                <option value="기타">기타</option>
-              </select>
-              {form.type === 'single' && (
-                <input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                />
-              )}
-              {form.type === 'daily' && (
-                <>
-                  <input
-                    type="date"
-                    placeholder="시작일"
-                    value={form.periodStart}
-                    onChange={e => setForm({ ...form, periodStart: e.target.value })}
-                  />
-                  <input
-                    type="date"
-                    placeholder="종료일"
-                    value={form.periodEnd}
-                    onChange={e => setForm({ ...form, periodEnd: e.target.value })}
-                  />
-                </>
-              )}
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">ADD TASK</button>
-                <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>CANCEL</button>
-              </div>
-            </form>
+            <TaskForm values={form} setValues={setForm} onSubmit={handleCreate} onCancel={() => setShowForm(false)} submitLabel="ADD TASK" />
+          </div>
+        </div>
+      )}
+
+      {/* 수정 모달 */}
+      {editingTodo && (
+        <div className="modal-overlay" onClick={() => setEditingTodo(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>EDIT TASK</h2>
+            <TaskForm values={editForm} setValues={setEditForm} onSubmit={handleUpdate} onCancel={() => setEditingTodo(null)} submitLabel="SAVE" />
           </div>
         </div>
       )}
