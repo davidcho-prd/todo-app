@@ -101,6 +101,10 @@ export default function TodoApp() {
     } catch (e) { setError(e.message); }
   }
 
+  function toDateStr(val) {
+    return val ? val.slice(0, 10) : '';
+  }
+
   function openEdit(todo) {
     setEditingTodo(todo);
     setEditForm({
@@ -108,9 +112,9 @@ export default function TodoApp() {
       content: todo.content || '',
       type: todo.type,
       category: todo.category || '기타',
-      dueDate: todo.due_date || '',
-      periodStart: todo.period_start || '',
-      periodEnd: todo.period_end || '',
+      dueDate: toDateStr(todo.due_date),
+      periodStart: toDateStr(todo.period_start),
+      periodEnd: toDateStr(todo.period_end),
     });
   }
 
