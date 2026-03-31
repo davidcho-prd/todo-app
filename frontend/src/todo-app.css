@@ -212,7 +212,6 @@ body {
 
 /* 수정 버튼 */
 .edit-btn {
-  margin-left: auto;
   background: transparent;
   border: 1px solid #e0d8cc;
   border-radius: 8px;

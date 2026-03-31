@@ -26,7 +26,53 @@ function getProgress(todo) {
   return Math.round(((todo.checked_dates || []).length / dates.length) * 100);
 }
 
-const EMPTY_FORM = { title: '', content: '', type: 'single', category: '기타', dueDate: '', periodStart: '', periodEnd: '' };
+const EMPTY_FORM = { title: '', content: '', type: 'single', category: '', dueDate: '', periodStart: '', periodEnd: '' };
+
+function TaskForm({ values, setValues, onSubmit, onCancel, submitLabel }) {
+  return (
+    <form onSubmit={onSubmit}>
+      <select value={values.type} onChange={e => setValues({ ...values, type: e.target.value })}>
+        <option value="single">ONE-TIME</option>
+        <option value="daily">DAILY</option>
+      </select>
+      <input
+        type="text"
+        placeholder="Task title"
+        value={values.title}
+        onChange={e => setValues({ ...values, title: e.target.value })}
+        required
+      />
+      <textarea
+        placeholder="내용 (선택사항)"
+        value={values.content}
+        onChange={e => setValues({ ...values, content: e.target.value })}
+        rows={3}
+      />
+      <select value={values.category} onChange={e => setValues({ ...values, category: e.target.value })} required>
+        <option value="">카테고리 선택</option>
+        <option value="업무">업무</option>
+        <option value="개인">개인</option>
+        <option value="의약">의약</option>
+        <option value="취미">취미</option>
+        <option value="스터디">스터디</option>
+        <option value="기타">기타</option>
+      </select>
+      {values.type === 'single' && (
+        <input type="date" value={values.dueDate} onChange={e => setValues({ ...values, dueDate: e.target.value })} required />
+      )}
+      {values.type === 'daily' && (
+        <>
+          <input type="date" value={values.periodStart} onChange={e => setValues({ ...values, periodStart: e.target.value })} required />
+          <input type="date" value={values.periodEnd} onChange={e => setValues({ ...values, periodEnd: e.target.value })} required />
+        </>
+      )}
+      <div className="modal-actions">
+        <button type="submit" className="btn-primary">{submitLabel}</button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>CANCEL</button>
+      </div>
+    </form>
+  );
+}
 
 export default function TodoApp() {
   const [todos, setTodos] = useState([]);
@@ -113,49 +159,6 @@ export default function TodoApp() {
     return true;
   });
 
-  const TaskForm = ({ values, setValues, onSubmit, onCancel, submitLabel }) => (
-    <form onSubmit={onSubmit}>
-      <select value={values.type} onChange={e => setValues({ ...values, type: e.target.value })}>
-        <option value="single">ONE-TIME</option>
-        <option value="daily">DAILY</option>
-      </select>
-      <input
-        type="text"
-        placeholder="Task title"
-        value={values.title}
-        onChange={e => setValues({ ...values, title: e.target.value })}
-        required
-      />
-      <textarea
-        placeholder="내용 (선택사항)"
-        value={values.content}
-        onChange={e => setValues({ ...values, content: e.target.value })}
-        rows={3}
-      />
-      <select value={values.category} onChange={e => setValues({ ...values, category: e.target.value })}>
-        <option value="업무">업무</option>
-        <option value="개인">개인</option>
-        <option value="의약">의약</option>
-        <option value="취미">취미</option>
-        <option value="스터디">스터디</option>
-        <option value="기타">기타</option>
-      </select>
-      {values.type === 'single' && (
-        <input type="date" value={values.dueDate} onChange={e => setValues({ ...values, dueDate: e.target.value })} />
-      )}
-      {values.type === 'daily' && (
-        <>
-          <input type="date" value={values.periodStart} onChange={e => setValues({ ...values, periodStart: e.target.value })} />
-          <input type="date" value={values.periodEnd} onChange={e => setValues({ ...values, periodEnd: e.target.value })} />
-        </>
-      )}
-      <div className="modal-actions">
-        <button type="submit" className="btn-primary">{submitLabel}</button>
-        <button type="button" className="btn-cancel" onClick={onCancel}>CANCEL</button>
-      </div>
-    </form>
-  );
-
   return (
     <div className="app">
       <header className="header">
@@ -190,7 +193,7 @@ export default function TodoApp() {
                 <input type="checkbox" className="todo-checkbox" checked={!!todo.completed} onChange={() => handleToggle(todo.id)} />
                 <span className={`badge badge-${todo.type}`}>{todo.type === 'single' ? 'ONE-TIME' : 'DAILY'}</span>
                 <button className="edit-btn" onClick={() => openEdit(todo)}>✎</button>
-                <button className="delete-btn" onClick={() => handleDelete(todo.id)}>🗑</button>
+                <button className="delete-btn" style={{ marginLeft: 'auto' }} onClick={() => handleDelete(todo.id)}>🗑</button>
               </div>
 
               <span className={`cat-badge cat-${todo.category}`}>{todo.category || '기타'}</span>
